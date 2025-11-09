@@ -5,6 +5,14 @@ from typing import Dict, List, Optional, Tuple
 
 def detect_header_row(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
 	"""Detect the header row of a dataframe."""
+	if len(def) == 0:
+		print('Empty dataframe')
+		return df, []
+
+	if len(df) == 1:
+		df.columns = [f"col_{i+1}" for i in range(len(df.columns))]
+		return df, []
+
 	total_columns = df.shape[1]
 	sample_limit = min(5, len(df))
 	non_null_ratios = []
