@@ -9,10 +9,12 @@ def detect_header_row(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
 		print('Empty dataframe')
 		return df, []
 
+    # Treat one row dataframes as data. Don't want to turn into headers
 	if len(df) == 1:
 		df.columns = [f"col_{i+1}" for i in range(len(df.columns))]
 		return df, []
 
+	# Store ratios of non-null values to total columns
 	total_columns = df.shape[1]
 	sample_limit = min(5, len(df))
 	non_null_ratios = []
@@ -21,6 +23,7 @@ def detect_header_row(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
 		non_null_count = row.count()
 		non_null_ratios.append(non_null_count / total_columns if total_columns else 0)
 
+	# Get first row where non-null to total ratio is >= 0.5 (happy medium)
 	selected_row_idx = 0
 	for idx, ratio in enumerate(non_null_ratios):
 		if ratio >= 0.5:
@@ -36,9 +39,11 @@ def detect_header_row(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
 		else:
 			header_str = str(header).strip()
 
+		# Create column names for empty cells
 		if not header_str:
 			header_str = f"col_{idx + 1}"
 
+		# Deal with duplicates by naming them name_1, name_2, etc
 		base_header = re.sub(r"\s+", " ", header_str)
 		candidate = base_header
 		counter = 2
@@ -48,11 +53,13 @@ def detect_header_row(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
 		seen[candidate.lower()] = True
 		clean_headers.append(candidate)
 
+	# Get everything below the header and drop the header row
 	if selected_row_idx != 0:
 		df = df.iloc[selected_row_idx + 1 :].reset_index(drop=True)
 	else:
 		df = df.iloc[1:].reset_index(drop=True)
 
+	# Assigne column labels to be the headers we just extracted
 	df.columns = clean_headers
 
 	return df, raw_headers
@@ -61,8 +68,18 @@ def detect_header_row(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
 def infer_column_types(df: pd.DataFrame) -> Dict[str, str]:
     """
     Infer the types of the columns of a dataframe.
+	Returns: {
+          "column_name": {
+              "type": "currency" | "date" | "integer" | "float" | "categorical" | "text",
+              "confidence": 0.0-1.0,
+              "sample_values": [...],  # first 5 samples
+          }
+      }
     """
-    pass
+	for col_name, col_data in df.items():
+		sample = col_data.dropna().head(200)
+		for index, value in sample.items():
+			
 
 def extract_units(headers: List[str]) -> Dict[str, Optional[str]]:
     """
